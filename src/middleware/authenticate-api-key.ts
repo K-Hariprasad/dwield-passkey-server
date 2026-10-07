@@ -51,6 +51,16 @@ export const authenticateApiKey = async (
       ApiKey.updateOne({ _id: apiKeyDoc._id }, { $set: { lastUsedAt: new Date() } }).catch(() => {});
       req.tenant = tenantDoc.toObject();
       req.apiKey = apiKeyDoc.toObject();
+
+      if (req.tenant.tenantId === 'tenant_dev_123' && req.headers.origin) {
+        try {
+          const originHost = new URL(req.headers.origin).hostname;
+          if (originHost && originHost !== 'localhost') {
+            req.tenant.rpId = originHost;
+          }
+        } catch {}
+      }
+
       return next();
     }
 
@@ -65,6 +75,16 @@ export const authenticateApiKey = async (
     if (devTenant) {
       const devApiKey = await ApiKey.findOne({ tenantId: devTenant.tenantId });
       req.tenant = devTenant.toObject();
+
+      if (req.headers.origin) {
+        try {
+          const originHost = new URL(req.headers.origin).hostname;
+          if (originHost && originHost !== 'localhost') {
+            req.tenant.rpId = originHost;
+          }
+        } catch {}
+      }
+
       if (devApiKey) {
         req.apiKey = devApiKey.toObject();
       } else {

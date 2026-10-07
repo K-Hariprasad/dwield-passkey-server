@@ -54,9 +54,28 @@ export class TenantService {
    */
   public static async seedDevTenant() {
     const DEV_TENANT_ID = 'tenant_dev_123';
+    const defaultAllowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:8080',
+      'https://dwield-auth-lab.vercel.app',
+    ];
+
     const existing = await Tenant.findOne({ tenantId: DEV_TENANT_ID });
 
     if (existing) {
+      let modified = false;
+      for (const origin of defaultAllowedOrigins) {
+        if (!existing.allowedOrigins.includes(origin)) {
+          existing.allowedOrigins.push(origin);
+          modified = true;
+        }
+      }
+      if (modified) {
+        await existing.save();
+        logger.info({ tenantId: DEV_TENANT_ID, allowedOrigins: existing.allowedOrigins }, 'Updated dev tenant allowedOrigins');
+      }
+
       const existingKey = await ApiKey.findOne({ tenantId: DEV_TENANT_ID, status: 'active' });
       return {
         tenantId: DEV_TENANT_ID,
@@ -75,7 +94,7 @@ export class TenantService {
       name: 'Dwield Local Development Tenant',
       status: 'active',
       rpId: 'localhost',
-      allowedOrigins: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080'],
+      allowedOrigins: defaultAllowedOrigins,
       userVerificationPolicy: 'preferred',
     });
 

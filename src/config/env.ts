@@ -14,7 +14,7 @@ const envSchema = z.object({
     .default(3000),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required').default('mongodb://localhost:27017/dwield-passkey'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:5173,https://dwield-auth-lab.vercel.app'),
 });
 
 const parseEnv = () => {

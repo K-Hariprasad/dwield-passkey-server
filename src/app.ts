@@ -24,20 +24,48 @@ export const createApp = (): Express => {
   );
 
   // CORS configuration
-  const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim());
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
-        if (!origin || allowedOrigins.includes(origin) || env.NODE_ENV === 'development') {
-          callback(null, true);
-        } else {
-          callback(new Error(`Origin ${origin} not allowed by CORS policy`));
-        }
-      },
-      credentials: true,
-    })
-  );
+  const configuredOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim());
+
+  const corsOptions: cors.CorsOptions = {
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Check if origin is explicitly allowed or matches wildcards/Vercel
+      const isAllowed =
+        configuredOrigins.includes('*') ||
+        configuredOrigins.includes(origin) ||
+        env.NODE_ENV === 'development' ||
+        origin.endsWith('.vercel.app') ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('http://127.0.0.1');
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        logger.warn({ origin, configuredOrigins }, 'CORS request blocked');
+        callback(null, false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Api-Key',
+      'X-Dwield-User-Token',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+    ],
+    exposedHeaders: ['Authorization'],
+    optionsSuccessStatus: 204,
+  };
+
+  app.use(cors(corsOptions));
+  app.options('*', cors(corsOptions));
 
   // Body parsing
   app.use(express.json({ limit: '10mb' }));
