@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dwield Passkey Service — Interactive WebAuthn POC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #141b2d;
+      --card-border: #232d48;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --success: #10b981;
+      --danger: #ef4444;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --code-bg: #090d16;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.75rem 1.25rem;
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.btn-secondary {
+      background: #374151;
+    }
+    button.btn-secondary:hover {
+      background: #4b5563;
+    }
+
+    button.btn-danger {
+      background: var(--danger);
+    }
+
+    .log-box {
+      margin-top: 1.5rem;
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      max-height: 300px;
+      overflow-y: auto;
+      color: #e5e7eb;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .status-alert {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .status-alert.success {
+      display: block;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .status-alert.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Dwield Passkey Service</h1>
+      <p>Multi-Tenant WebAuthn & Adaptive Step-Up Authentication Proof of Concept</p>
+      <span class="badge">WebAuthn FIDO2 / TouchID / Windows Hello / Security Key Ready</span>
+    </header>
+
+    <div class="grid">
+      <!-- Tenant & User Configuration Card -->
+      <div class="card">
+        <h2>🔑 1. Integration Credentials & User Context</h2>
+        <div class="grid grid-2">
+          <div class="form-group">
+            <label for="apiKey">Customer API Key (X-API-Key)</label>
+            <input type="text" id="apiKey" value="dw_dev_pub_1234567890abcdef1234567890abcdef12345678">
+          </div>
+          <div class="form-group">
+            <label for="userId">Authenticated User ID</label>
+            <input type="text" id="userId" value="alice@example.com">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="userToken">Trusted User Identity Context Token (X-Dwield-User-Token)</label>
+          <input type="text" id="userToken" value="dev_user_alice@example.com">
+        </div>
+      </div>
+
+      <!-- Passkey Ceremonies Card -->
+      <div class="grid grid-2">
+        <div class="card">
+          <h2>🛡️ 2. Passkey Registration</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+            Enroll a new biometric or platform passkey for the current user.
+          </p>
+          <div class="form-group">
+            <label for="friendlyName">Passkey Friendly Name</label>
+            <input type="text" id="friendlyName" value="My MacBook TouchID">
+          </div>
+          <button id="btnRegister">🚀 Register Passkey</button>
+        </div>
+
+        <div class="card">
+          <h2>🔐 3. Passkey Authentication</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+            Authenticate user and issue signed Step-Up Verification Token.
+          </p>
+          <div class="form-group">
+            <label for="assessmentId">Risk Assessment ID (Optional)</label>
+            <input type="text" id="assessmentId" value="asm_risk_dev_1001">
+          </div>
+          <button id="btnAuthenticate">⚡ Authenticate with Passkey</button>
+        </div>
+      </div>
+
+      <!-- Credential Management & Token Verification -->
+      <div class="grid grid-2">
+        <div class="card">
+          <h2>📋 Registered Passkeys</h2>
+          <button id="btnList" class="btn-secondary" style="margin-bottom: 0.75rem;">🔄 Refresh Passkeys List</button>
+          <div id="credentialTableContainer">
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Click 'Refresh Passkeys List' to view credentials.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>🔍 Step-Up Token Inspector</h2>
+          <div class="form-group">
+            <label for="stepUpToken">Step-Up Token (Generated upon Authentication)</label>
+            <input type="text" id="stepUpToken" placeholder="Authenticate to generate token...">
+          </div>
+          <button id="btnVerifyToken" class="btn-secondary">Check Single-Use Token Verification API</button>
+        </div>
+      </div>
+
+      <!-- Real-time Console Log -->
+      <div class="card">
+        <h2>🖥️ Ceremony Console Log</h2>
+        <div id="statusAlert" class="status-alert"></div>
+        <div id="logBox" class="log-box">Ready. Click 'Register Passkey' or 'Authenticate with Passkey' to test real browser WebAuthn ceremonies.</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      startRegistration,
+      startAuthentication
+    } from 'https://unpkg.com/@simplewebauthn/browser@13.0.0/dist/bundle/index.js';
+
+    const logBox = document.getElementById('logBox');
+    const statusAlert = document.getElementById('statusAlert');
+    const stepUpTokenInput = document.getElementById('stepUpToken');
+
+    function log(message, data = null) {
+      const time = new Date().toLocaleTimeString();
+      let text = `[${time}] ${message}`;
+      if (data) {
+        text += '\n' + JSON.stringify(data, null, 2);
+      }
+      logBox.innerText += '\n\n' + text;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function showStatus(message, type = 'success') {
+      statusAlert.className = `status-alert ${type}`;
+      statusAlert.innerText = message;
+    }
+
+    function getHeaders() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const userId = document.getElementById('userId').value.trim();
+      let userToken = document.getElementById('userToken').value.trim();
+
+      if (!userToken || userToken.includes('alice@example.com') && userId !== 'alice@example.com') {
+        userToken = `dev_user_${userId}`;
+      }
+
+      return {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey,
+        'X-Dwield-User-Token': userToken,
+      };
+    }
+
+    // 1. WebAuthn Passkey Registration Ceremony
+    document.getElementById('btnRegister').addEventListener('click', async () => {
+      try {
+        logBox.innerText = 'Starting Passkey Registration ceremony...';
+        showStatus('Initiating registration options request...', 'success');
+
+        const headers = getHeaders();
+        const friendlyName = document.getElementById('friendlyName').value.trim();
+
+        // Step A: Request Options from Server
+        log('POST /v1/passkeys/registration/options');
+        const optRes = await fetch('/v1/passkeys/registration/options', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            userName: document.getElementById('userId').value,
+            userDisplayName: document.getElementById('userId').value,
+          }),
+        });
+
+        const optData = await optRes.json();
+        if (!optRes.ok) {
+          throw new Error(optData.error?.message || 'Failed to generate registration options');
+        }
+
+        log('Server Registration Options Received:', optData);
+
+        // Step B: Trigger Browser WebAuthn Ceremony
+        log('Invoking browser WebAuthn ceremony (startRegistration)...');
+        const attResp = await startRegistration({ optionsJSON: optData.options });
+        log('Authenticator Response Received:', attResp);
+
+        // Step C: Verify Response on Server
+        log('POST /v1/passkeys/registration/verify');
+        const verRes = await fetch('/v1/passkeys/registration/verify', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            ceremonyId: optData.ceremonyId,
+            friendlyName,
+            response: attResp,
+          }),
+        });
+
+        const verData = await verRes.json();
+        if (!verRes.ok) {
+          throw new Error(verData.error?.message || 'Server registration verification failed');
+        }
+
+        log('Passkey Registration SUCCESS! Credential ID:', verData.credentialId);
+        showStatus(`Passkey registered successfully! Credential ID: ${verData.credentialId}`, 'success');
+        refreshPasskeysList();
+      } catch (err) {
+        log('Registration Error:', err.message);
+        showStatus(`Registration Failed: ${err.message}`, 'error');
+      }
+    });
+
+    // 2. WebAuthn Passkey Authentication Ceremony
+    document.getElementById('btnAuthenticate').addEventListener('click', async () => {
+      try {
+        logBox.innerText = 'Starting Passkey Authentication ceremony...';
+        showStatus('Initiating authentication options request...', 'success');
+
+        const headers = getHeaders();
+        const assessmentId = document.getElementById('assessmentId').value.trim();
+
+        // Step A: Request Options from Server
+        log('POST /v1/passkeys/authentication/options');
+        const optRes = await fetch('/v1/passkeys/authentication/options', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            assessmentId,
+            stepUpSessionId: `step_sess_${Date.now()}`,
+          }),
+        });
+
+        const optData = await optRes.json();
+        if (!optRes.ok) {
+          throw new Error(optData.error?.message || 'Failed to generate authentication options');
+        }
+
+        log('Server Authentication Options Received:', optData);
+
+        // Step B: Trigger Browser WebAuthn Assertion Ceremony
+        log('Invoking browser WebAuthn ceremony (startAuthentication)...');
+        const asrtResp = await startAuthentication({ optionsJSON: optData.options });
+        log('Authenticator Assertion Received:', asrtResp);
+
+        // Step C: Verify Assertion on Server
+        log('POST /v1/passkeys/authentication/verify');
+        const verRes = await fetch('/v1/passkeys/authentication/verify', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            ceremonyId: optData.ceremonyId,
+            response: asrtResp,
+          }),
+        });
+
+        const verData = await verRes.json();
+        if (!verRes.ok) {
+          throw new Error(verData.error?.message || 'Server assertion verification failed');
+        }
+
+        log('Passkey Authentication SUCCESS!', verData);
+        showStatus(`Authentication Verified! Signed Step-Up Token Generated.`, 'success');
+
+        if (verData.stepUpToken) {
+          stepUpTokenInput.value = verData.stepUpToken;
+        }
+      } catch (err) {
+        log('Authentication Error:', err.message);
+        showStatus(`Authentication Failed: ${err.message}`, 'error');
+      }
+    });
+
+    // 3. Step-Up Token Backend Verification API
+    document.getElementById('btnVerifyToken').addEventListener('click', async () => {
+      try {
+        const token = stepUpTokenInput.value.trim();
+        if (!token) {
+          throw new Error('Please authenticate first to generate a Step-Up Token.');
+        }
+
+        log('POST /v1/step-up/verify-token');
+        const res = await fetch('/v1/step-up/verify-token', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ token }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error?.message || 'Token verification failed');
+        }
+
+        log('Step-Up Token Verification Result:', data);
+        showStatus('Step-Up Token Verified & Nonce Consumed (Single-use enforced).', 'success');
+      } catch (err) {
+        log('Token Verification Error:', err.message);
+        showStatus(`Token Verification Failed: ${err.message}`, 'error');
+      }
+    });
+
+    // 4. List and Revoke Credentials
+    async function refreshPasskeysList() {
+      try {
+        const container = document.getElementById('credentialTableContainer');
+        const res = await fetch('/v1/passkeys', { headers: getHeaders() });
+        const data = await res.json();
+
+        if (!res.ok) {
+          container.innerHTML = `<p style="color: var(--danger); font-size: 0.85rem;">Error: ${data.error?.message}</p>`;
+          return;
+        }
+
+        if (data.credentials.length === 0) {
+          container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No active passkeys registered.</p>';
+          return;
+        }
+
+        let html = '<table><thead><tr><th>Name</th><th>Created</th><th>Action</th></tr></thead><tbody>';
+        data.credentials.forEach(c => {
+          html += `<tr>
+            <td><strong>${c.friendlyName || 'Passkey'}</strong><br><small style="color: var(--text-muted); font-family: monospace;">${c.credentialId.substring(0, 16)}...</small></td>
+            <td>${new Date(c.createdAt).toLocaleDateString()}</td>
+            <td><button class="btn-danger btn-revoke" data-id="${c.credentialId}" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">Revoke</button></td>
+          </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+        document.querySelectorAll('.btn-revoke').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const credId = e.target.getAttribute('data-id');
+            if (confirm(`Revoke passkey '${credId.substring(0, 16)}...'?`)) {
+              await revokePasskey(credId);
+            }
+          });
+        });
+      } catch (err) {
+        log('List Credentials Error:', err.message);
+      }
+    }
+
+    async function revokePasskey(credentialId) {
+      try {
+        log(`DELETE /v1/passkeys/${credentialId}`);
+        const res = await fetch(`/v1/passkeys/${encodeURIComponent(credentialId)}`, {
+          method: 'DELETE',
+          headers: getHeaders(),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error?.message || 'Revocation failed');
+        }
+        log('Passkey Revoked:', data);
+        showStatus('Passkey revoked successfully', 'success');
+        refreshPasskeysList();
+      } catch (err) {
+        log('Revoke Error:', err.message);
+        showStatus(`Revoke Failed: ${err.message}`, 'error');
+      }
+    }
+
+    document.getElementById('btnList').addEventListener('click', refreshPasskeysList);
+  </script>
+</body>
+</html>
