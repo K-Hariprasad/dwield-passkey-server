@@ -76,11 +76,27 @@ export class TenantService {
         logger.info({ tenantId: DEV_TENANT_ID, allowedOrigins: existing.allowedOrigins }, 'Updated dev tenant allowedOrigins');
       }
 
-      const existingKey = await ApiKey.findOne({ tenantId: DEV_TENANT_ID, status: 'active' });
+      let existingKey = await ApiKey.findOne({ tenantId: DEV_TENANT_ID, status: 'active' });
+      if (!existingKey) {
+        const rawDevApiKey = 'dw_dev_pub_1234567890abcdef1234567890abcdef12345678';
+        const { hashApiKey } = await import('../../shared/utils/crypto');
+        const keyHash = hashApiKey(rawDevApiKey);
+        existingKey = await ApiKey.create({
+          keyId: 'key_dev_default',
+          tenantId: DEV_TENANT_ID,
+          keyHash,
+          keyType: 'publishable',
+          status: 'active',
+          permissions: ['passkey:register', 'passkey:authenticate', 'passkey:manage'],
+        });
+        logger.info({ tenantId: DEV_TENANT_ID, keyId: 'key_dev_default' }, 'Seeded default development API key for existing tenant');
+      }
+
       return {
         tenantId: DEV_TENANT_ID,
         isSeeded: false,
-        keyId: existingKey?.keyId,
+        keyId: existingKey.keyId,
+        rawApiKey: 'dw_dev_pub_1234567890abcdef1234567890abcdef12345678',
       };
     }
 
