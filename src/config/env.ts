@@ -8,10 +8,10 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z
-    .string()
-    .transform((val) => parseInt(val, 10))
+    .union([z.string(), z.number()])
+    .transform((val) => (typeof val === 'number' ? val : parseInt(val, 10)))
     .pipe(z.number().positive().max(65535))
-    .default('3000'),
+    .default(3000),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required').default('mongodb://localhost:27017/dwield-passkey'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),

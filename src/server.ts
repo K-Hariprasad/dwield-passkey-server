@@ -14,10 +14,11 @@ const startServer = async () => {
 
     const app = createApp();
 
-    const server = app.listen(env.PORT, () => {
+    const HOST = '0.0.0.0';
+    const server = app.listen(env.PORT, HOST, () => {
       logger.info(
-        { port: env.PORT, environment: env.NODE_ENV },
-        `Dwield Passkey Server listening on port ${env.PORT}`
+        { port: env.PORT, host: HOST, environment: env.NODE_ENV },
+        `Dwield Passkey Server listening on http://${HOST}:${env.PORT}`
       );
     });
 
@@ -41,10 +42,20 @@ const startServer = async () => {
     process.on('SIGINT', () => shutdown('SIGINT'));
     process.on('SIGTERM', () => shutdown('SIGTERM'));
   } catch (error) {
+    console.error('FATAL: Failed to start server:', error);
     logger.fatal({ err: error }, 'Failed to start server');
     process.exit(1);
   }
 };
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Promise Rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
 
 if (require.main === module) {
   startServer();
