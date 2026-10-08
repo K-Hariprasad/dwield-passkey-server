@@ -59,6 +59,7 @@ export class CredentialController {
       res.status(200).json({
         status: 'success',
         ...result,
+        data: result,
       });
     } catch (error) {
       next(error);

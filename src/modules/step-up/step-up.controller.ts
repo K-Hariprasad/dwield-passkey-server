@@ -28,6 +28,11 @@ export class StepUpController {
       res.status(201).json({
         status: 'success',
         session,
+        stepUpSessionId: session.stepUpSessionId,
+        data: {
+          session,
+          stepUpSessionId: session.stepUpSessionId,
+        },
       });
     } catch (error) {
       next(error);
@@ -61,6 +66,10 @@ export class StepUpController {
         status: 'success',
         valid: result.valid,
         payload: result.payload,
+        data: {
+          valid: result.valid,
+          payload: result.payload,
+        },
       });
     } catch (error) {
       next(error);
