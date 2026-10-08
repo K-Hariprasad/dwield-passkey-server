@@ -30,6 +30,10 @@ export class AuthenticationController {
         status: 'success',
         ceremonyId: result.ceremonyId,
         options: result.options,
+        data: {
+          ceremonyId: result.ceremonyId,
+          options: result.options,
+        },
       });
     } catch (error) {
       next(error);
@@ -69,6 +73,14 @@ export class AuthenticationController {
         credentialId: result.credentialId,
         assessmentId: result.assessmentId,
         stepUpSessionId: result.stepUpSessionId,
+        data: {
+          verified: result.verified,
+          tenantId: result.tenantId,
+          userId: result.userId,
+          credentialId: result.credentialId,
+          assessmentId: result.assessmentId,
+          stepUpSessionId: result.stepUpSessionId,
+        },
       });
     } catch (error) {
       next(error);

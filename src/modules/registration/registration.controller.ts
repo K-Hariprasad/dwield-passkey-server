@@ -30,6 +30,10 @@ export class RegistrationController {
         status: 'success',
         ceremonyId: result.ceremonyId,
         options: result.options,
+        data: {
+          ceremonyId: result.ceremonyId,
+          options: result.options,
+        },
       });
     } catch (error) {
       next(error);
@@ -68,6 +72,12 @@ export class RegistrationController {
         credentialId: result.credentialId,
         friendlyName: result.friendlyName,
         createdAt: result.createdAt,
+        data: {
+          verified: result.verified,
+          credentialId: result.credentialId,
+          friendlyName: result.friendlyName,
+          createdAt: result.createdAt,
+        },
       });
     } catch (error) {
       next(error);

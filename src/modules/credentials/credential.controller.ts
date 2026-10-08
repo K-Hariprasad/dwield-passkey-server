@@ -21,6 +21,7 @@ export class CredentialController {
       res.status(200).json({
         status: 'success',
         credentials,
+        data: credentials,
       });
     } catch (error) {
       next(error);
